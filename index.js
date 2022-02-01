@@ -6,11 +6,12 @@ const date = new Date()
 
 app.use(cors())
 app.use(express.json())
+app.use(express.static('build'))
 app.use(morgan('combined'))
 
 let phonebook = [
     { 
-      "id": 1,
+      "id": 1, 
       "name": "Arto Hellas", 
       "number": "040-123456"
     },
@@ -38,7 +39,6 @@ app.get('/', (request, response) => {
 app.get('/api/persons', (request, response) => {
     response.json(phonebook)
 })
-
 
 app.get('/info', (request, response) => {
     response.send(`<p>Phonebook has info for ${phonebook.length} people</p> 
