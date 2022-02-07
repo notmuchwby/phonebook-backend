@@ -1,7 +1,9 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 const app = express()
+const Person = require('./models/person')
 const date = new Date()
 
 app.use(cors())
@@ -37,7 +39,9 @@ app.get('/', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-    response.json(phonebook)
+    Person.find({}).then(person => {
+        response.json(person)
+    })
 })
 
 app.get('/info', (request, response) => {
@@ -46,60 +50,87 @@ app.get('/info', (request, response) => {
 })
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const phoneNumber = phonebook.find(number => number.id === id)
-    if(phoneNumber) {
-        response.json(phoneNumber)
-    } else {
-        response.status(404).end()
-    }
+    Person.findById(request.params.id)
+        .then(person => {
+            if(person) {
+                response.json(person)
+            } else {
+                response.status(400).end()
+            }   
+        })
+        .catch(error => {
+            response.status(400).send({error: 'malformatted id'})
+        })
 })
 
-app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    phonebook = phonebook.filter(phone => phone.id !== id)
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+  
+    if (error.name === 'CastError') {
+      return response.status(400).send({ error: 'malformatted id' })
+    } 
+  
+    next(error)
+  }
 
-    response.status(204).end()
+app.use(errorHandler)
+
+app.delete('/api/persons/:id', (request, response, next) => {
+    Person.findByIdAndRemove(request.params.id)
+        .then(result => {
+            console.log(result, 'removed succesfully')
+            response.status(204).end()
+        })
+        .catch(error => next(error))
 })
-
-const generateId = () => {
-    const maxId = phonebook.length > 0 
-    ? Math.max(...phonebook.map(number => number.id)) 
-    : 0
-    return maxId + 1
-}
 
 app.post('/api/persons', (request, response) => {
     const body = request.body
 
     console.log(body)
     
-    const samePerson = phonebook.find(person => person.name === body.name)
-
-    if(samePerson) {
-        response.status(400).json({
-            error: "this person is already in the list"
-        })
-    } else if(!body.name) {
-        response.status(400).json({
-            error: "the name is missing!"
-        })
-    } else if(!body.number) {
-        response.status(400).json({
-            error: "the number is missing"
-        })
+    if(body.name === undefined) {
+        return response.status(400).json({ error: 'name is missing'})
     }
+    // const samePerson = phonebook.find(person => person.name === body.name)
 
-    const newPerson = {
+    // if(samePerson) {
+    //     response.status(400).json({
+    //         error: "this person is already in the list"
+    //     })
+    // } else if(!body.name) {
+    //     response.status(400).json({
+    //         error: "the name is missing!"
+    //     })
+    // } else if(!body.number) {
+    //     response.status(400).json({
+    //         error: "the number is missing"
+    //     })
+    // }
+
+    const newPerson = new Person({
         name: body.name,
-        number: body.number,
-        id: generateId()
-    }
+        number: body.number
+    })
 
-    phonebook.concat(newPerson)
-    response.json(newPerson)
+    newPerson.save().then(savedPerson => {
+        response.json(savedPerson)
+    })
 })
 
+app.put('/api/persons/:id', (request, response, next) => {
+    const body = request.body
+
+    newPerson = {
+        name: body.name, 
+        number: body.number
+    }
+
+    Person.findByIdAndUpdate(request.params.id, newPerson, {new: true})
+        .then(updatedPerson => 
+            response.json(updatedPerson))
+        .catch(error => next(error))
+})
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
