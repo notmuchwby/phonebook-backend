@@ -63,18 +63,6 @@ app.get('/api/persons/:id', (request, response) => {
         })
 })
 
-const errorHandler = (error, request, response, next) => {
-    console.error(error.message)
-  
-    if (error.name === 'CastError') {
-      return response.status(400).send({ error: 'malformatted id' })
-    } 
-  
-    next(error)
-  }
-
-app.use(errorHandler)
-
 app.delete('/api/persons/:id', (request, response, next) => {
     Person.findByIdAndRemove(request.params.id)
         .then(result => {
@@ -92,30 +80,19 @@ app.post('/api/persons', (request, response) => {
     if(body.name === undefined) {
         return response.status(400).json({ error: 'name is missing'})
     }
-    // const samePerson = phonebook.find(person => person.name === body.name)
-
-    // if(samePerson) {
-    //     response.status(400).json({
-    //         error: "this person is already in the list"
-    //     })
-    // } else if(!body.name) {
-    //     response.status(400).json({
-    //         error: "the name is missing!"
-    //     })
-    // } else if(!body.number) {
-    //     response.status(400).json({
-    //         error: "the number is missing"
-    //     })
-    // }
-
+    
     const newPerson = new Person({
         name: body.name,
         number: body.number
     })
 
-    newPerson.save().then(savedPerson => {
-        response.json(savedPerson)
-    })
+    newPerson.save()
+        .then(savedPerson => {
+            response.json(savedPerson)
+        })
+        .catch(error => {
+            console.log(error.response.data)
+        })
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
@@ -131,6 +108,20 @@ app.put('/api/persons/:id', (request, response, next) => {
             response.json(updatedPerson))
         .catch(error => next(error))
 })
+
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+  
+    if (error.name === 'CastError') {
+      return response.status(400).send({ error: 'malformatted id' })
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).send({ error: 'the name should have at least 3 characters'})
+    }
+  
+    next(error)
+  }
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
