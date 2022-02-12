@@ -72,7 +72,7 @@ app.delete('/api/persons/:id', (request, response, next) => {
         .catch(error => next(error))
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     const body = request.body
 
     console.log(body)
@@ -91,7 +91,8 @@ app.post('/api/persons', (request, response) => {
             response.json(savedPerson)
         })
         .catch(error => {
-            console.log(error.response.data)
+            next(error)
+            console.log(error)
         })
 })
 

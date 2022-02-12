@@ -18,6 +18,8 @@
     "morgan": "^1.10.0"
   },
   "devDependencies": {
+    "eslint": "^8.9.0",
+    "eslit": "^6.0.0",
     "nodemon": "^2.0.15"
   }
 }
